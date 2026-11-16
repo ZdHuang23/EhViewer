@@ -651,4 +651,7 @@
     <string name="tag_refresh_confirm">重新获取所有已下载画廊的标签？</string>
     <string name="tag_started">已提交后台同步任务</string>
     <string name="tag_sync_failed">同步请求失败，请检查网络、站点和登录状态后点击继续同步。</string>
+    <string name="tag_filter_reset">重置筛选</string>
+    <string name="tag_filter_example">填入外部广告示例</string>
+    <string name="tag_filter_input_hint">输入标签条件，或点击下方示例填入</string>
 </resources>

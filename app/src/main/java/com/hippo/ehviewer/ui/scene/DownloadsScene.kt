@@ -108,6 +108,7 @@ class DownloadsScene :
     private var mKeyword: String? = null
     private var mSort = Settings.defaultSortingMethod
     private var tagMatches: Set<Long>? = null
+    private var tagFilterJob: kotlinx.coroutines.Job? = null
     private var mType = -1
     private var mInitPosition = -1
 
@@ -319,6 +320,7 @@ class DownloadsScene :
     }
 
     override fun onDestroyView() {
+        tagFilterJob?.cancel()
         super.onDestroyView()
         if (null != mRecyclerView) {
             mRecyclerView!!.stopScroll()
@@ -348,33 +350,27 @@ class DownloadsScene :
         }
         when (item.itemId) {
             R.id.action_tag_filter -> {
-                val input = android.widget.EditText(requireContext()).apply { hint = "other:extraneous ads" }
-                AlertDialog.Builder(requireContext()).setTitle(R.string.tag_filter).setMessage(R.string.tag_filter_hint)
-                    .setView(input)
-                    .setPositiveButton(android.R.string.ok) { _, _ ->
-                        val query = input.text.toString().trim()
-                        lifecycleScope.launchUI {
+                com.hippo.ehviewer.tags.LocalTagFilterDialog(requireContext()) { query, unknown ->
+                    tagFilterJob?.cancel()
+                    if (query == null && !unknown) {
+                        tagMatches = null
+                        updateForLabel()
+                        updateView()
+                    } else {
+                        tagFilterJob = lifecycleScope.launchUI {
                             val dao = com.hippo.ehviewer.tags.GalleryTagDatabase.get(requireContext()).tags()
-                            val parsed = try {
-                                com.hippo.ehviewer.tags.TagQuery.parse(query)
-                            } catch (error: IllegalArgumentException) {
-                                android.widget.Toast.makeText(requireContext(), error.message, android.widget.Toast.LENGTH_LONG).show()
-                                return@launchUI
+                            tagMatches = if (unknown) {
+                                val known = dao.known().toSet()
+                                DownloadManager.allDownloadInfoList.map { it.gid }.filter { it !in known }.toSet()
+                            } else {
+                                val parsed = com.hippo.ehviewer.tags.TagQuery.parse(query!!)
+                                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { dao.filter(parsed) }
                             }
-                            tagMatches = if (query.isEmpty()) null else kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { dao.filter(parsed) }
                             updateForLabel()
                             updateView()
                         }
                     }
-                    .setNeutralButton(R.string.tag_unknown) { _, _ ->
-                        lifecycleScope.launchUI {
-                            val known = com.hippo.ehviewer.tags.GalleryTagDatabase.get(requireContext()).tags().known().toSet()
-                            tagMatches = DownloadManager.allDownloadInfoList.map { it.gid }.filter { it !in known }.toSet()
-                            updateForLabel()
-                            updateView()
-                        }
-                    }
-                    .setNegativeButton(android.R.string.cancel, null).show()
+                }.show()
                 return true
             }
             R.id.action_filter -> {
