@@ -107,6 +107,7 @@ class DownloadsScene :
     private var mLabelItemTouchHelper: ItemTouchHelper? = null
     private var mKeyword: String? = null
     private var mSort = Settings.defaultSortingMethod
+    private var tagMatches: Set<Long>? = null
     private var mType = -1
     private var mInitPosition = -1
 
@@ -198,6 +199,7 @@ class DownloadsScene :
             mList = list
         }
 
+        tagMatches?.let { ids -> mList = mList!!.filter { it.gid in ids }.toMutableList() }
         if (mSort == 10) {
             mList = ArrayList(mList!!.shuffled())
         } else {
@@ -345,6 +347,30 @@ class DownloadsScene :
             return false
         }
         when (item.itemId) {
+            R.id.action_tag_filter -> {
+                val input = android.widget.EditText(requireContext()).apply { hint = "other:extraneous ads" }
+                AlertDialog.Builder(requireContext()).setTitle(R.string.tag_filter).setMessage(R.string.tag_filter_hint)
+                    .setView(input)
+                    .setPositiveButton(android.R.string.ok) { _, _ ->
+                        val query = input.text.toString().trim()
+                        lifecycleScope.launchUI {
+                            val dao = com.hippo.ehviewer.tags.GalleryTagDatabase.get(requireContext()).tags()
+                            tagMatches = if (query.isEmpty()) null else dao.matching(query.substringBefore(':', ""), query.substringAfter(':')).toSet()
+                            updateForLabel()
+                            updateView()
+                        }
+                    }
+                    .setNeutralButton(R.string.tag_unknown) { _, _ ->
+                        lifecycleScope.launchUI {
+                            val known = com.hippo.ehviewer.tags.GalleryTagDatabase.get(requireContext()).tags().known().toSet()
+                            tagMatches = DownloadManager.allDownloadInfoList.map { it.gid }.filter { it !in known }.toSet()
+                            updateForLabel()
+                            updateView()
+                        }
+                    }
+                    .setNegativeButton(android.R.string.cancel, null).show()
+                return true
+            }
             R.id.action_filter -> {
                 AlertDialog.Builder(requireActivity())
                     .setSingleChoiceItems(
@@ -840,6 +866,30 @@ class DownloadsScene :
                             override fun onMenuItemClick(item: MenuItem): Boolean {
                                 val label = mLabels[index]
                                 when (item.itemId) {
+                                    R.id.action_tag_filter -> {
+                                        val input = android.widget.EditText(requireContext()).apply { hint = "other:extraneous ads" }
+                                        AlertDialog.Builder(requireContext()).setTitle(R.string.tag_filter).setMessage(R.string.tag_filter_hint)
+                                            .setView(input)
+                                            .setPositiveButton(android.R.string.ok) { _, _ ->
+                                                val query = input.text.toString().trim()
+                                                lifecycleScope.launchUI {
+                                                    val dao = com.hippo.ehviewer.tags.GalleryTagDatabase.get(requireContext()).tags()
+                                                    tagMatches = if (query.isEmpty()) null else dao.matching(query.substringBefore(':', ""), query.substringAfter(':')).toSet()
+                                                    updateForLabel()
+                                                    updateView()
+                                                }
+                                            }
+                                            .setNeutralButton(R.string.tag_unknown) { _, _ ->
+                                                lifecycleScope.launchUI {
+                                                    val known = com.hippo.ehviewer.tags.GalleryTagDatabase.get(requireContext()).tags().known().toSet()
+                                                    tagMatches = DownloadManager.allDownloadInfoList.map { it.gid }.filter { it !in known }.toSet()
+                                                    updateForLabel()
+                                                    updateView()
+                                                }
+                                            }
+                                            .setNegativeButton(android.R.string.cancel, null).show()
+                                        return true
+                                    }
                                     R.id.menu_label_rename -> {
                                         val builder = EditTextDialogBuilder(
                                             requireContext(),

@@ -17,6 +17,7 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
+    <item android:id="@+id/action_tag_filter" android:title="@string/tag_filter" app:showAsAction="never" />
     <item
         android:id="@+id/action_filter"
         android:icon="@drawable/v_filter_dark_x24"

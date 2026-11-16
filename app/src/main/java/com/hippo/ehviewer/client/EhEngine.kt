@@ -253,6 +253,15 @@ object EhEngine {
             }
     }
 
+    suspend fun getGalleryTags(items: List<com.hippo.ehviewer.tags.TagSync>): Map<Long, com.hippo.ehviewer.tags.TagMetadata> {
+        require(items.size in 1..MAX_REQUEST_SIZE)
+        val payload = JSONObject().put("method", "gdata").put("namespace", 1)
+            .put("gidlist", JSONArray().apply { items.forEach { put(JSONArray().put(it.gid).put(it.token)) } })
+        return EhRequestBuilder(EhUrl.apiUrl, EhUrl.referer, EhUrl.origin)
+            .post(payload.toString().toRequestBody(MEDIA_TYPE_JSON))
+            .executeAndParsingWith { com.hippo.ehviewer.tags.parseTagMetadata(this, items.map { it.gid }.toSet()) }
+    }
+
     suspend fun getGalleryDetail(url: String): GalleryDetail {
         val referer = EhUrl.referer
         Log.d(TAG, url)

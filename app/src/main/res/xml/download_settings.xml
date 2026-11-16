@@ -84,4 +84,12 @@
         android:title="@string/settings_download_clean_redundancy"
         app:iconSpaceReserved="false" />
 
+    <PreferenceCategory android:title="@string/tag_database">
+        <SwitchPreferenceCompat android:key="tag_auto_sync" android:defaultValue="true" android:title="@string/tag_auto_sync" app:iconSpaceReserved="false" />
+        <Preference android:key="tag_status" android:title="@string/tag_status" app:iconSpaceReserved="false" />
+        <Preference android:key="tag_fill" android:title="@string/tag_fill" app:iconSpaceReserved="false" />
+        <SwitchPreferenceCompat android:key="tag_sync_paused" android:defaultValue="false" android:title="@string/tag_pause" app:iconSpaceReserved="false" />
+        <Preference android:key="tag_retry" android:title="@string/tag_retry" app:iconSpaceReserved="false" />
+        <Preference android:key="tag_refresh" android:title="@string/tag_refresh" android:summary="@string/tag_refresh_summary" app:iconSpaceReserved="false" />
+    </PreferenceCategory>
 </PreferenceScreen>

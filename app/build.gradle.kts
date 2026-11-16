@@ -36,7 +36,7 @@ android {
                 include(*supportedAbis)
                 isUniversalApk = true
             } else {
-                include("x86_64", "x86")
+                include("arm64-v8a", "x86_64")
             }
         }
     }
@@ -119,6 +119,10 @@ android {
         }
     }
 
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+    }
+
     buildFeatures {
         buildConfig = true
     }
@@ -127,6 +131,10 @@ android {
 }
 
 dependencies {
+    implementation("androidx.work:work-runtime-ktx:2.11.0")
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.robolectric:robolectric:4.16.1")
+    testImplementation("org.json:json:20250517")
     // https://developer.android.com/jetpack/androidx/releases/activity
     implementation(libs.androidx.activity)
     implementation(libs.androidx.appcompat)

@@ -61,6 +61,10 @@ object EhDB {
                 update(downloadInfo)
             } else {
                 insert(downloadInfo)
+                val context = com.hippo.ehviewer.EhApplication.application
+                if (androidx.preference.PreferenceManager.getDefaultSharedPreferences(context).getBoolean("tag_auto_sync", true)) {
+                    com.hippo.ehviewer.tags.TagSyncWorker.schedule(context)
+                }
             }
         }
     }
