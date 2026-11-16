@@ -1,0 +1,105 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "304d2024b94fce4d9ffa72e7f3a9e5db",
+    "entities": [
+      {
+        "tableName": "gallery_tag_sync",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`gid` INTEGER NOT NULL, `token` TEXT, `complete` INTEGER NOT NULL, `status` TEXT NOT NULL, `updatedAt` INTEGER NOT NULL, `attempts` INTEGER NOT NULL, PRIMARY KEY(`gid`))",
+        "fields": [
+          {
+            "fieldPath": "gid",
+            "columnName": "gid",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "token",
+            "columnName": "token",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "complete",
+            "columnName": "complete",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "attempts",
+            "columnName": "attempts",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "gid"
+          ]
+        }
+      },
+      {
+        "tableName": "gallery_tags",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`gid` INTEGER NOT NULL, `namespace` TEXT NOT NULL, `name` TEXT NOT NULL, PRIMARY KEY(`gid`, `namespace`, `name`))",
+        "fields": [
+          {
+            "fieldPath": "gid",
+            "columnName": "gid",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "namespace",
+            "columnName": "namespace",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "gid",
+            "namespace",
+            "name"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_gallery_tags_namespace_name_gid",
+            "unique": false,
+            "columnNames": [
+              "namespace",
+              "name",
+              "gid"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_gallery_tags_namespace_name_gid` ON `${TABLE_NAME}` (`namespace`, `name`, `gid`)"
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '304d2024b94fce4d9ffa72e7f3a9e5db')"
+    ]
+  }
+}

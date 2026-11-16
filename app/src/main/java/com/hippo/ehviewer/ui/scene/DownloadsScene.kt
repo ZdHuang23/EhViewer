@@ -107,6 +107,8 @@ class DownloadsScene :
     private var mLabelItemTouchHelper: ItemTouchHelper? = null
     private var mKeyword: String? = null
     private var mSort = Settings.defaultSortingMethod
+    private var tagMatches: Set<Long>? = null
+    private var tagFilterJob: kotlinx.coroutines.Job? = null
     private var mType = -1
     private var mInitPosition = -1
 
@@ -198,6 +200,7 @@ class DownloadsScene :
             mList = list
         }
 
+        tagMatches?.let { ids -> mList = mList!!.filter { it.gid in ids }.toMutableList() }
         if (mSort == 10) {
             mList = ArrayList(mList!!.shuffled())
         } else {
@@ -317,6 +320,7 @@ class DownloadsScene :
     }
 
     override fun onDestroyView() {
+        tagFilterJob?.cancel()
         super.onDestroyView()
         if (null != mRecyclerView) {
             mRecyclerView!!.stopScroll()
@@ -345,6 +349,30 @@ class DownloadsScene :
             return false
         }
         when (item.itemId) {
+            R.id.action_tag_filter -> {
+                com.hippo.ehviewer.tags.LocalTagFilterDialog(requireContext()) { query, unknown ->
+                    tagFilterJob?.cancel()
+                    if (query == null && !unknown) {
+                        tagMatches = null
+                        updateForLabel()
+                        updateView()
+                    } else {
+                        tagFilterJob = lifecycleScope.launchUI {
+                            val dao = com.hippo.ehviewer.tags.GalleryTagDatabase.get(requireContext()).tags()
+                            tagMatches = if (unknown) {
+                                val known = dao.known().toSet()
+                                DownloadManager.allDownloadInfoList.map { it.gid }.filter { it !in known }.toSet()
+                            } else {
+                                val parsed = com.hippo.ehviewer.tags.TagQuery.parse(query!!)
+                                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { dao.filter(parsed) }
+                            }
+                            updateForLabel()
+                            updateView()
+                        }
+                    }
+                }.show()
+                return true
+            }
             R.id.action_filter -> {
                 AlertDialog.Builder(requireActivity())
                     .setSingleChoiceItems(

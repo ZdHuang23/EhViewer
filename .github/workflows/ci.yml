@@ -27,6 +27,9 @@ jobs:
       - name: Spotless Check
         run: ./gradlew spotlessCheck
 
+      - name: Unit Tests
+        run: ./gradlew testDebugUnitTest
+
       - name: Gradle Build
         run: ./gradlew assembleRelease
 

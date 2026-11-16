@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingStart="24dp"
+    android:paddingEnd="24dp"
+    android:paddingTop="8dp"
+    android:paddingBottom="8dp">
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/tag_filter_hint" />
+    <com.hippo.ehviewer.tags.TagAutoCompleteTextView
+        android:id="@+id/tag_filter_input"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="48dp"
+        android:inputType="textMultiLine|textNoSuggestions"
+        android:hint="@string/tag_filter_input_hint"
+        android:gravity="start|top" />
+    <Button
+        android:id="@+id/tag_filter_example"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/tag_filter_example" />
+    <Button
+        android:id="@+id/tag_filter_unknown"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/tag_unknown" />
+</LinearLayout>

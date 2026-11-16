@@ -23,16 +23,21 @@ import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.ListPreference
 import androidx.preference.Preference
+import androidx.preference.SwitchPreferenceCompat
 import com.hippo.ehviewer.AppConfig
 import com.hippo.ehviewer.R
 import com.hippo.ehviewer.Settings
+import com.hippo.ehviewer.tags.GalleryTagDatabase
+import com.hippo.ehviewer.tags.TagSyncWorker
 import com.hippo.ehviewer.ui.keepNoMediaFileStatus
 import com.hippo.ehviewer.ui.scene.BaseScene
 import com.hippo.unifile.UniFile
 import com.hippo.util.ExceptionUtils
 import com.hippo.util.launchNonCancellable
+import kotlinx.coroutines.launch
 
 class DownloadFragment : BasePreferenceFragment() {
+    private var tagSyncFailed = false
     private var mDownloadLocation: Preference? = null
     private var pickImageDirLauncher = registerForActivityResult<Uri?, Uri>(
         ActivityResultContracts.OpenDocumentTree(),
@@ -81,6 +86,51 @@ class DownloadFragment : BasePreferenceFragment() {
             getString(R.string.settings_download_download_origin_image_summary, (it as ListPreference).entry)
         }
         onUpdateDownloadLocation()
+        listOf("tag_fill", "tag_retry", "tag_refresh", "tag_status").forEach { key ->
+            findPreference<Preference>(key)?.setOnPreferenceClickListener {
+                if (key == "tag_status") {
+                    refreshTagStatus()
+                } else if (key == "tag_refresh") {
+                    AlertDialog.Builder(requireContext()).setMessage(R.string.tag_refresh_confirm)
+                        .setPositiveButton(android.R.string.ok) { _, _ -> TagSyncWorker.schedule(requireContext(), seed = true, refresh = true) }
+                        .setNegativeButton(android.R.string.cancel, null).show()
+                } else {
+                    TagSyncWorker.schedule(requireContext(), seed = true, retry = key == "tag_retry")
+                    showTip(R.string.tag_started, BaseScene.LENGTH_SHORT)
+                }
+                true
+            }
+        }
+        listOf("tag_auto_sync", "tag_sync_paused").forEach { key ->
+            findPreference<SwitchPreferenceCompat>(key)?.setOnPreferenceChangeListener { _, value ->
+                if (key == "tag_auto_sync" && value == true || key == "tag_sync_paused" && value == false) {
+                    // Post until the preference value has been committed.
+                    android.os.Handler(android.os.Looper.getMainLooper()).post { TagSyncWorker.schedule(requireContext()) }
+                }
+                true
+            }
+        }
+        androidx.work.WorkManager.getInstance(requireContext()).getWorkInfosForUniqueWorkLiveData("gallery-tag-sync")
+            .observe(this) { jobs ->
+                tagSyncFailed = jobs.lastOrNull()?.state == androidx.work.WorkInfo.State.FAILED
+                refreshTagStatus()
+            }
+        refreshTagStatus()
+    }
+
+    private fun refreshTagStatus() {
+        lifecycleScope.launch {
+            val rows = GalleryTagDatabase.get(requireContext()).tags().all()
+            val summary = getString(
+                R.string.tag_stats,
+                rows.count { it.complete },
+                rows.count { it.status == "pending" },
+                rows.count { it.status == "unavailable" },
+                rows.count { it.status == "failed" },
+                rows.count { it.status == "missing" },
+            )
+            findPreference<Preference>("tag_status")?.summary = if (tagSyncFailed) "$summary\n${getString(R.string.tag_sync_failed)}" else summary
+        }
     }
 
     override fun onDestroy() {
