@@ -46,11 +46,20 @@ abstract class GalleryTagDao {
     @Query("SELECT gid FROM gallery_tags WHERE namespace = :namespace AND name = :name")
     abstract suspend fun matching(namespace: String, name: String): List<Long>
 
+    @Query("SELECT * FROM gallery_tags")
+    abstract suspend fun allTags(): List<GalleryTag>
+
     @Query("SELECT gid FROM gallery_tag_sync WHERE complete = 1")
     abstract suspend fun known(): List<Long>
 
     @Query("SELECT * FROM gallery_tag_sync")
     abstract suspend fun all(): List<TagSync>
+
+    @Transaction
+    open suspend fun filter(query: TagQuery): Set<Long> {
+        val grouped = allTags().groupBy { it.gid }
+        return known().filter { query.matches(grouped[it].orEmpty()) }.toSet()
+    }
 
     @Transaction
     open suspend fun save(sync: TagSync, tags: List<GalleryTag>) {

@@ -51,4 +51,19 @@ class GalleryTagDatabaseTest {
             db.close()
         }
     }
+
+    @Test fun negativeFilterExcludesUnknownMetadata() = runBlocking {
+        val db = Room.inMemoryDatabaseBuilder(RuntimeEnvironment.getApplication(), GalleryTagDatabase::class.java).build()
+        try {
+            val dao = db.tags()
+            dao.seed(1, "known")
+            dao.save(dao.get(1)!!, emptyList())
+            dao.seed(2, "unknown")
+            dao.seed(3, "advertisement")
+            dao.save(dao.get(3)!!, listOf(GalleryTag(3, "other", "extraneous ads")))
+            assertEquals(setOf(1L), dao.filter(TagQuery.parse("-o:\"extraneous ads$\"")))
+        } finally {
+            db.close()
+        }
+    }
 }

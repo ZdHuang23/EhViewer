@@ -84,7 +84,7 @@
         android:title="@string/settings_download_clean_redundancy"
         app:iconSpaceReserved="false" />
 
-    <PreferenceCategory android:title="@string/tag_database">
+    <PreferenceCategory android:title="@string/tag_database" app:iconSpaceReserved="false" android:layout="@layout/preference_tag_category">
         <SwitchPreferenceCompat android:key="tag_auto_sync" android:defaultValue="true" android:title="@string/tag_auto_sync" app:iconSpaceReserved="false" />
         <Preference android:key="tag_status" android:title="@string/tag_status" app:iconSpaceReserved="false" />
         <Preference android:key="tag_fill" android:title="@string/tag_fill" app:iconSpaceReserved="false" />

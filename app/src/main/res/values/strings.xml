@@ -714,7 +714,7 @@
     <string name="tag_refresh_summary">旧标签保留到获取成功；线上失效画廊无法重建。标签库不参与备份。</string>
     <string name="tag_stats">已保存 %1$d · 待处理 %2$d · 不可用 %3$d · 失败 %4$d · 缺少身份信息 %5$d</string>
     <string name="tag_filter">本地标签筛选</string>
-    <string name="tag_filter_hint">输入原始标签，例如 other:extraneous ads；留空取消</string>
+    <string name="tag_filter_hint">支持类别缩写：o、l、a 等。空格表示与，~ 表示或，- 表示排除，$ 精确匹配；含空格的标签加双引号。留空取消。</string>
     <string name="tag_unknown">标签未知</string>
     <string name="tag_refresh_confirm">重新获取所有已下载画廊的标签？</string>
     <string name="tag_started">已提交后台同步任务</string>
