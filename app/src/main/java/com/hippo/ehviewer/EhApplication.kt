@@ -100,6 +100,7 @@ class EhApplication :
         if (androidx.preference.PreferenceManager.getDefaultSharedPreferences(this).getBoolean("tag_auto_sync", true)) {
             com.hippo.ehviewer.tags.TagSyncWorker.schedule(this)
         }
+        com.hippo.ehviewer.ads.AdCleanupWorker.schedule(this)
         ReadableTime.initialize(this)
         AppConfig.initialize(this)
         AppCompatDelegate.setDefaultNightMode(Settings.theme)

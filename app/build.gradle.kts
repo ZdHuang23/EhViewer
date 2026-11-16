@@ -131,6 +131,7 @@ android {
 }
 
 dependencies {
+    implementation("com.google.zxing:core:3.5.4")
     implementation("androidx.work:work-runtime-ktx:2.11.0")
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.robolectric:robolectric:4.16.1")

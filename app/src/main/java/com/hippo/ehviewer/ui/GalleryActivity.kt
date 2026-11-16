@@ -1033,6 +1033,18 @@ class GalleryActivity :
         if (ACTION_EH == mAction && !Settings.getDownloadOriginImage(false)) {
             items.add(getString(R.string.page_menu_download_original))
         }
+        (mGalleryProvider as? EhGalleryProvider)?.let { provider ->
+            val record = provider.adRecord
+            val tail = com.hippo.ehviewer.ads.AdRecord.tail(record.pages).toSet()
+            builder.setTitle(
+                resources.getString(R.string.page_menu_title, page + 1) + "\n" +
+                    getString(R.string.ad_gallery_status, record.ads.size, (record.checked + record.restored).intersect(tail).size, tail.size) +
+                    if (record.manualComplete) "\n" + getString(R.string.ad_manually_complete) else "",
+            )
+            items.add(getString(R.string.ad_mark_page))
+            items.add(getString(R.string.ad_mark_complete))
+            items.add(getString(R.string.ad_scan_gallery))
+        }
         pageDialogListener(builder, items.toTypedArray(), page)
         builder.show()
     }
@@ -1046,10 +1058,45 @@ class GalleryActivity :
             if (mGalleryProvider == null) {
                 return@setItems
             }
+            val provider = mGalleryProvider as? EhGalleryProvider
+            if (provider != null && items[which] in listOf(getString(R.string.ad_mark_page), getString(R.string.ad_mark_complete), getString(R.string.ad_scan_gallery))) {
+                val action = items[which]
+                AlertDialog.Builder(this).setMessage(
+                    when (action) {
+                        getString(R.string.ad_mark_page) -> R.string.ad_mark_confirm
+                        getString(R.string.ad_scan_gallery) -> R.string.ad_scan_confirm
+                        else -> R.string.ad_complete_confirm
+                    },
+                ).setPositiveButton(android.R.string.ok) { _, _ ->
+                    lifecycleScope.launchIO {
+                        try {
+                            when (action) {
+                                getString(R.string.ad_mark_page) -> provider.markAd(page)
+                                getString(R.string.ad_scan_gallery) -> provider.scanAds(true)
+                                else -> provider.markAdComplete()
+                            }
+                            withUIContext { Toast.makeText(this@GalleryActivity, R.string.ad_action_done, Toast.LENGTH_LONG).show() }
+                        } catch (e: kotlinx.coroutines.CancellationException) {
+                            throw e
+                        } catch (_: Exception) {
+                            withUIContext { Toast.makeText(this@GalleryActivity, R.string.ad_action_failed, Toast.LENGTH_LONG).show() }
+                        }
+                    }
+                }.setNegativeButton(android.R.string.cancel, null).show()
+                return@setItems
+            }
             when (which) {
                 0 -> {
-                    mGalleryProvider!!.removeCache(page)
-                    mGalleryProvider!!.forceRequest(page)
+                    if (provider?.isAd(page) == true) {
+                        AlertDialog.Builder(this).setMessage(R.string.ad_restore_confirm)
+                            .setPositiveButton(android.R.string.ok) { _, _ ->
+                                provider.removeCache(page)
+                                provider.forceRequest(page)
+                            }.setNegativeButton(android.R.string.cancel, null).show()
+                    } else {
+                        mGalleryProvider!!.removeCache(page)
+                        mGalleryProvider!!.forceRequest(page)
+                    }
                 }
                 1 -> shareImage(page)
                 2 -> copyImage(page)
@@ -1237,8 +1284,10 @@ class GalleryActivity :
         }
 
         private fun onTapErrorText(index: Int) {
-            if (mGalleryProvider != null) {
-                mGalleryProvider!!.forceRequest(index)
+            if ((mGalleryProvider as? EhGalleryProvider)?.isAd(index) == true) {
+                showPageDialog(index)
+            } else {
+                mGalleryProvider?.forceRequest(index)
             }
         }
 

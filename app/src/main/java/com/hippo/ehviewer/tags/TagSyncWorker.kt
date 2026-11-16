@@ -37,7 +37,9 @@ class TagSyncWorker(context: Context, parameters: WorkerParameters) : CoroutineW
                 val response = EhEngine.getGalleryTags(batch)
                 for (item in batch) {
                     when (val metadata = response[item.gid]) {
-                        is TagMetadata.Available -> dao.save(item, metadata.tags)
+                        is TagMetadata.Available -> {
+                            dao.save(item, metadata.tags)
+                        }
                         TagMetadata.Unavailable -> dao.put(item.copy(status = "unavailable"))
                         else -> dao.put(item.copy(attempts = item.attempts + 1, status = if (item.attempts >= 2) "failed" else "pending"))
                     }
@@ -48,6 +50,7 @@ class TagSyncWorker(context: Context, parameters: WorkerParameters) : CoroutineW
                 // Preserve snapshots and pending entries across network/authentication failures.
                 return if (runAttemptCount < 3) Result.retry() else Result.failure()
             }
+            com.hippo.ehviewer.ads.AdCleanupWorker.schedule(applicationContext)
             if (++batches >= 60) return Result.retry()
             delay(5000)
         }
