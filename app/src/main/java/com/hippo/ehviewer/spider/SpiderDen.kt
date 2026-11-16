@@ -19,6 +19,7 @@ import android.util.Log
 import com.hippo.ehviewer.EhApplication.Companion.imageCache as sCache
 import com.hippo.ehviewer.EhApplication.Companion.nonCacheOkHttpClient
 import com.hippo.ehviewer.Settings
+import com.hippo.ehviewer.ads.AdPages
 import com.hippo.ehviewer.client.EhRequestBuilder
 import com.hippo.ehviewer.client.EhUtils.getSuitableTitle
 import com.hippo.ehviewer.client.data.GalleryInfo
@@ -43,7 +44,10 @@ import okhttp3.coroutines.executeAsync
 import okio.buffer
 import okio.sink
 
-class SpiderDen(private val mGalleryInfo: GalleryInfo) {
+class SpiderDen(
+    private val mGalleryInfo: GalleryInfo,
+    private val isAdPage: (Int) -> Boolean = { AdPages.isAd(mGalleryInfo.gid, it) },
+) {
     private val fileHashRegex = Regex("/h/([0-9a-f]{40})")
     private val mGid = mGalleryInfo.gid
     var downloadDir: UniFile? = null
@@ -106,15 +110,19 @@ class SpiderDen(private val mGalleryInfo: GalleryInfo) {
         }
     }
 
-    operator fun contains(index: Int): Boolean = when (mode) {
-        SpiderQueen.MODE_READ -> {
-            containInCache(index) || containInDownloadDir(index)
-        }
-        SpiderQueen.MODE_DOWNLOAD -> {
-            containInDownloadDir(index) || copyFromCacheToDownloadDir(index, Settings.skipCopyImage)
-        }
-        else -> {
-            false
+    operator fun contains(index: Int): Boolean = if (isAdPage(index)) {
+        true
+    } else {
+        when (mode) {
+            SpiderQueen.MODE_READ -> {
+                containInCache(index) || containInDownloadDir(index)
+            }
+            SpiderQueen.MODE_DOWNLOAD -> {
+                containInDownloadDir(index) || copyFromCacheToDownloadDir(index, Settings.skipCopyImage)
+            }
+            else -> {
+                false
+            }
         }
     }
 
@@ -235,6 +243,7 @@ class SpiderDen(private val mGalleryInfo: GalleryInfo) {
     }
 
     fun saveToUniFile(index: Int, file: UniFile): Boolean {
+        if (isAdPage(index)) return false
         val key = getImageKey(mGid, index)
 
         // Read from diskCache first
@@ -268,6 +277,7 @@ class SpiderDen(private val mGalleryInfo: GalleryInfo) {
     }
 
     fun getImageSource(index: Int): UniFileSource? {
+        if (isAdPage(index)) return null
         if (mode == SpiderQueen.MODE_READ) {
             val key = getImageKey(mGid, index)
             sCache.openSnapshot(key)?.let {

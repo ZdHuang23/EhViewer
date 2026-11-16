@@ -654,4 +654,35 @@
     <string name="tag_filter_reset">重置筛选</string>
     <string name="tag_filter_example">填入外部广告示例</string>
     <string name="tag_filter_input_hint">输入标签条件，或点击下方示例填入</string>
+
+    <string name="ad_settings">广告页清理</string>
+    <string name="ad_auto">下载完成后自动清理广告页</string>
+    <string name="ad_auto_summary">对带 other:extraneous ads 标签的画廊识别最后 7 页的二维码。手动恢复的页面不再自动清理。</string>
+    <string name="ad_clean_all">清理已有下载／继续清理</string>
+    <string name="ad_clean_all_summary">按本地标签处理已完成的下载；标签未知的画廊需先补全标签。</string>
+    <string name="ad_pause">暂停广告清理</string>
+    <string name="ad_status">广告清理状态</string>
+    <string name="ad_bulk_confirm">扫描带 other:extraneous ads 标签的已下载画廊的最后 7 页，将含二维码的页面标记为广告并删除图片，保留原始页码。正常页面也可能有二维码，误判后可在该页长按菜单中刷新恢复。</string>
+    <string name="ad_page_placeholder">此页已被标记为广告，图片已删除。长按 → 刷新可恢复。</string>
+    <string name="ad_mark_page">将此页标记为广告并删除图片</string>
+    <string name="ad_mark_complete">标记整本已去广告</string>
+    <string name="ad_scan_gallery">重新检查最后 7 页二维码</string>
+    <string name="ad_mark_confirm">将此页标记为广告并删除已下载及缓存的图片？之后可通过刷新撤销标记并重新下载。</string>
+    <string name="ad_scan_confirm">检查最后 7 页的现有图片（不要求广告标签），将二维码页面标记并删除。手动恢复的页面会保留；本次检查不会额外下载图片。</string>
+    <string name="ad_complete_confirm">将整本标记为已手动去广告，跳过后续自动二维码检查？已有广告标记会保留。可通过重新检查最后 7 页恢复扫描。</string>
+    <string name="ad_restore_confirm">撤销广告标记并重新下载此页？之后自动清理会保留此页，除非再次手动标记为广告。</string>
+    <string name="ad_action_done">广告处理已保存。缺失或无法识别的页面保留为未检查。</string>
+    <string name="ad_action_failed">未能完成清理。已保存的标记仍保留，可重试完成图片删除。</string>
+    <string name="ad_state_paused">已暂停；关闭暂停或点击继续可恢复批量任务</string>
+    <string name="ad_state_running">正在处理</string>
+    <string name="ad_state_queued">已排队</string>
+    <string name="ad_state_idle">空闲</string>
+    <string name="ad_progress">已处理 %1$d / %2$d 本 · 本轮移除 %3$d 页图片 · 失败画廊 %4$d · 未检查／删除失败 %5$d · 等待标签 %6$d</string>
+    <string name="ad_storage_title">下载缓存空间占用</string>
+    <string name="ad_storage_calculating">正在统计实际文件大小…</string>
+    <string name="ad_storage_summary">下载目录：%1$s\n阅读图片缓存：%2$s</string>
+    <string name="ad_storage_partial">有 %1$d 个文件或目录无法统计，当前为已知占用。</string>
+    <string name="ad_storage_failed">无法统计空间占用，请检查目录访问权限。</string>
+    <string name="ad_gallery_status">已标记广告 %1$d 页 · 尾页已检查 %2$d / %3$d 页</string>
+    <string name="ad_manually_complete">已手动标记整本去广告，自动检查已跳过</string>
 </resources>

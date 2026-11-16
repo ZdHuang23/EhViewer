@@ -24,6 +24,8 @@ import com.hippo.ehviewer.EhApplication.Companion.okHttpClient as plainTextOkHtt
 import com.hippo.ehviewer.GetText
 import com.hippo.ehviewer.R
 import com.hippo.ehviewer.Settings
+import com.hippo.ehviewer.ads.AdCleaner
+import com.hippo.ehviewer.ads.AdPages
 import com.hippo.ehviewer.client.EhEngine
 import com.hippo.ehviewer.client.EhRequestBuilder
 import com.hippo.ehviewer.client.EhUrl
@@ -137,6 +139,7 @@ class SpiderQueen private constructor(val galleryInfo: GalleryInfo) : CoroutineS
     }
 
     private fun notifyAllPageDownloaded() {
+        writeSpiderInfoToLocal()
         synchronized(mSpiderListeners) {
             mSpiderListeners.forEach {
                 it.onFinish(
@@ -178,6 +181,11 @@ class SpiderQueen private constructor(val galleryInfo: GalleryInfo) : CoroutineS
             MODE_READ
         }
         mSpiderDen.mode = mode
+        if (mode == MODE_DOWNLOAD && (adRecord.ads.isNotEmpty() || adRecord.restored.isNotEmpty() || adRecord.checked.isNotEmpty() || adRecord.manualComplete)) {
+            // A page may have been marked while reading online, before a download directory existed.
+            runCatching { AdPages.store.change(galleryInfo.gid, mSpiderDen.downloadDir) { it } }
+                .onFailure { Log.w(TAG, "Could not mirror ad decisions into download directory", it) }
+        }
 
         // Update download page
         val intoDownloadMode = mode == MODE_DOWNLOAD
@@ -229,11 +237,20 @@ class SpiderQueen private constructor(val galleryInfo: GalleryInfo) : CoroutineS
         check(!(mReadReference < 0 || mDownloadReference < 0)) { "Mode reference < 0" }
     }
 
-    private val prepareJob = launchIO { doPrepare() }
+    private val prepareJob = launchIO {
+        try {
+            doPrepare()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.e(TAG, "Cannot prepare gallery safely", e)
+        }
+    }
 
     private suspend fun doPrepare() {
         mSpiderDen.downloadDir = SpiderDen.getGalleryDownloadDir(galleryInfo.gid)?.takeIf { it.isDirectory }
         mSpiderInfo = readSpiderInfoFromLocal() ?: readSpiderInfoFromInternet() ?: return
+        AdPages.load(galleryInfo.gid, mSpiderInfo.token, mSpiderInfo.pages)
         mPageStateArray = IntArray(mSpiderInfo.pages)
         prepareUpgrade()
         notifyGetPages(mSpiderInfo.pages)
@@ -287,6 +304,35 @@ class SpiderQueen private constructor(val galleryInfo: GalleryInfo) : CoroutineS
     val size
         get() = mPageStateArray.size
 
+    val adRecord get() = AdPages.store.get(galleryInfo.gid)
+    fun isAd(index: Int) = AdPages.isAd(galleryInfo.gid, index)
+
+    suspend fun markAd(index: Int) {
+        AdPages.lock(galleryInfo.gid, index).withLock {
+            try {
+                AdPages.store.change(galleryInfo.gid, mSpiderDen.downloadDir) { it.mark(index) }
+                check(AdCleaner.deleteImages(galleryInfo.gid, index).complete) { "Ad image deletion incomplete" }
+            } finally {
+                if (isAd(index)) adChanged(galleryInfo.gid, index)
+            }
+        }
+    }
+
+    suspend fun markAdComplete() {
+        AdPages.scanLock(galleryInfo.gid).withLock {
+            AdPages.store.change(galleryInfo.gid, mSpiderDen.downloadDir) { it.copy(manualComplete = true) }
+        }
+    }
+
+    suspend fun scanAds(recheck: Boolean) {
+        if (recheck) {
+            AdPages.scanLock(galleryInfo.gid).withLock {
+                AdPages.store.change(galleryInfo.gid, mSpiderDen.downloadDir) { it.copy(checked = emptySet(), manualComplete = false) }
+            }
+        }
+        AdCleaner.scan(mSpiderInfo)
+    }
+
     fun forceRequest(index: Int) {
         request(index, true)
     }
@@ -326,6 +372,7 @@ class SpiderQueen private constructor(val galleryInfo: GalleryInfo) : CoroutineS
     }
 
     suspend fun downloadOriginal(index: Int, dir: UniFile, filename: String): UniFile? {
+        if (AdPages.isAd(galleryInfo.gid, index)) return null
         val pToken = getPToken(index) ?: return null
         val pageUrl = EhUrl.getPageUrl(mSpiderInfo.gid, index, pToken)
         val originImageUrl = EhEngine.getGalleryPage(pageUrl, mSpiderInfo.gid, mSpiderInfo.token)
@@ -503,6 +550,7 @@ class SpiderQueen private constructor(val galleryInfo: GalleryInfo) : CoroutineS
     @Retention(AnnotationRetention.SOURCE)
     annotation class State
     interface OnSpiderListener {
+        fun onAdPageChanged(index: Int) {}
         fun onGetPages(pages: Int)
         fun onGet509(index: Int)
         fun onPageDownload(index: Int, contentLength: Long, receivedSize: Long, bytesRead: Int)
@@ -566,11 +614,11 @@ class SpiderQueen private constructor(val galleryInfo: GalleryInfo) : CoroutineS
             val currentJob = mFetcherJobMap[index]
             val skipHath = force && currentJob?.isActive == true
             if (force) currentJob?.cancel(CancellationException(FORCE_RETRY))
-            if (currentJob?.isActive != true) {
+            if (force || currentJob?.isActive != true) {
                 mFetcherJobMap[index] = launch {
                     runCatching {
                         mSemaphore.withPermit {
-                            doInJob(index, force, skipHath)
+                            AdPages.lock(galleryInfo.gid, index).withLock { doInJob(index, force, skipHath) }
                         }
                     }.onFailure {
                         if (it is CancellationException) {
@@ -590,12 +638,18 @@ class SpiderQueen private constructor(val galleryInfo: GalleryInfo) : CoroutineS
 
         fun launch(index: Int, force: Boolean = false) {
             check(index in 0 until size)
-            if (!isDownloadMode) synchronized(mFetcherJobMap) { doLaunchDownloadJob(index, force) }
+            if (force || !isDownloadMode) synchronized(mFetcherJobMap) { doLaunchDownloadJob(index, force) }
             if (force) decoder.cancel(index)
             decoder.launch(index)
         }
 
         private suspend fun doInJob(index: Int, force: Boolean, skipHath: Boolean) {
+            if (force && (AdPages.isAd(galleryInfo.gid, index) || index in AdPages.store.get(galleryInfo.gid).restored)) {
+                AdPages.store.change(galleryInfo.gid, mSpiderDen.downloadDir) { it.restore(index) }
+            }
+            if (AdPages.isAd(galleryInfo.gid, index)) {
+                return updatePageState(index, STATE_FINISHED)
+            }
             val previousPToken: String?
             val pToken: String
             pTokenLock.withLock {
@@ -759,6 +813,14 @@ class SpiderQueen private constructor(val galleryInfo: GalleryInfo) : CoroutineS
 
             private suspend fun doInJob(index: Int) {
                 mFetcherJobMap[index]?.takeIf { it.isActive }?.join()
+                AdPages.lock(galleryInfo.gid, index).withLock { decode(index) }
+            }
+
+            private suspend fun decode(index: Int) {
+                if (AdPages.isAd(galleryInfo.gid, index)) {
+                    notifyGetImageFailure(index, GetText.getString(R.string.ad_page_placeholder))
+                    return
+                }
                 val src = mSpiderDen.getImageSource(index) ?: return
                 val image = mSemaphore.withPermit { Image.decode(src) }
                 runCatching {
@@ -793,6 +855,14 @@ class SpiderQueen private constructor(val galleryInfo: GalleryInfo) : CoroutineS
         private val URL_509_PATTERN = Regex("\\.org/.+/509s?\\.gif")
         private const val FORCE_RETRY = "Force retry"
         private const val WORKER_DEBUG_TAG = "SpiderQueenWorker"
+
+        fun adChanged(gid: Long, index: Int) {
+            com.hippo.yorozuya.SimpleHandler.getInstance().post {
+                sQueenMap[gid]?.let { queen ->
+                    synchronized(queen.mSpiderListeners) { queen.mSpiderListeners.forEach { it.onAdPageChanged(index) } }
+                }
+            }
+        }
 
         fun reset(gid: Long) {
             sQueenMap[gid]?.resetStates()

@@ -37,6 +37,8 @@ import com.hippo.util.launchNonCancellable
 import kotlinx.coroutines.launch
 
 class DownloadFragment : BasePreferenceFragment() {
+    private var adJobs: List<androidx.work.WorkInfo> = emptyList()
+    private var storageJob: kotlinx.coroutines.Job? = null
     private var tagSyncFailed = false
     private var mDownloadLocation: Preference? = null
     private var pickImageDirLauncher = registerForActivityResult<Uri?, Uri>(
@@ -116,6 +118,82 @@ class DownloadFragment : BasePreferenceFragment() {
                 refreshTagStatus()
             }
         refreshTagStatus()
+        findPreference<Preference>("ad_clean_all")?.setOnPreferenceClickListener {
+            AlertDialog.Builder(requireContext()).setMessage(R.string.ad_bulk_confirm)
+                .setPositiveButton(android.R.string.ok) { _, _ ->
+                    com.hippo.ehviewer.ads.AdCleanupWorker.schedule(requireContext(), bulk = true)
+                }.setNegativeButton(android.R.string.cancel, null).show()
+            true
+        }
+        listOf("ad_auto", "ad_paused").forEach { key ->
+            findPreference<SwitchPreferenceCompat>(key)?.setOnPreferenceChangeListener { _, value ->
+                if (key == "ad_auto" && value == true || key == "ad_paused" && value == false) {
+                    android.os.Handler(android.os.Looper.getMainLooper()).post {
+                        if (key == "ad_auto") TagSyncWorker.schedule(requireContext(), seed = true)
+                        com.hippo.ehviewer.ads.AdCleanupWorker.schedule(requireContext())
+                    }
+                }
+                android.os.Handler(android.os.Looper.getMainLooper()).post { if (isAdded) refreshAdStatus() }
+                true
+            }
+        }
+        androidx.work.WorkManager.getInstance(requireContext()).getWorkInfosForUniqueWorkLiveData(com.hippo.ehviewer.ads.AdCleanupWorker.WORK)
+            .observe(this) { jobs ->
+                adJobs = jobs
+                refreshAdStatus()
+                if (jobs.none { it.state == androidx.work.WorkInfo.State.RUNNING }) refreshStorage()
+            }
+    }
+
+    private fun refreshAdStatus() {
+        val active = adJobs.lastOrNull { it.state == androidx.work.WorkInfo.State.RUNNING }
+        val prefs = androidx.preference.PreferenceManager.getDefaultSharedPreferences(requireContext())
+        val data = active?.progress
+        val state = when {
+            prefs.getBoolean("ad_paused", false) -> getString(R.string.ad_state_paused)
+            active != null -> getString(R.string.ad_state_running)
+            adJobs.any { !it.state.isFinished } -> getString(R.string.ad_state_queued)
+            else -> getString(R.string.ad_state_idle)
+        }
+        findPreference<Preference>("ad_status")?.summary = state + "\n" + getString(
+            R.string.ad_progress,
+            data?.getInt("done", 0) ?: prefs.getInt("ad_done", 0),
+            data?.getInt("total", 0) ?: prefs.getInt("ad_total", 0),
+            data?.getInt("removed", 0) ?: prefs.getInt("ad_removed", 0),
+            data?.getInt("errors", 0) ?: prefs.getInt("ad_errors", 0),
+            data?.getInt("incomplete", 0) ?: prefs.getInt("ad_incomplete", 0),
+            data?.getInt("waiting", 0) ?: prefs.getInt("ad_waiting", 0),
+        )
+    }
+
+    override fun onResume() {
+        super.onResume()
+        refreshAdStatus()
+        refreshStorage()
+    }
+
+    private fun refreshStorage() {
+        if (storageJob?.isActive == true) return
+        val context = requireContext().applicationContext
+        val location = Settings.downloadLocation
+        findPreference<Preference>("download_storage")?.setSummary(R.string.ad_storage_calculating)
+        storageJob = lifecycleScope.launch {
+            try {
+                val (usage, cacheBytes) = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    location?.let { com.hippo.ehviewer.ads.DownloadStorage.measure(it) } to com.hippo.ehviewer.EhApplication.imageCache.size
+                }
+                fun format(bytes: Long) = android.text.format.Formatter.formatFileSize(context, bytes)
+                findPreference<Preference>("download_storage")?.summary = getString(
+                    R.string.ad_storage_summary,
+                    usage?.let { format(it.bytes) } ?: getString(R.string.settings_download_invalid_download_location),
+                    format(cacheBytes),
+                ) + if (usage?.unknown != null && usage.unknown > 0) "\n" + getString(R.string.ad_storage_partial, usage.unknown) else ""
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                findPreference<Preference>("download_storage")?.setSummary(R.string.ad_storage_failed)
+            }
+        }
     }
 
     private fun refreshTagStatus() {

@@ -722,4 +722,35 @@
     <string name="tag_filter_reset">重置筛选</string>
     <string name="tag_filter_example">填入外部广告示例</string>
     <string name="tag_filter_input_hint">输入标签条件，或点击下方示例填入</string>
+
+    <string name="ad_settings">Ad pages</string>
+    <string name="ad_auto">Clean ad pages after download</string>
+    <string name="ad_auto_summary">Scan the last 7 pages of galleries tagged other:extraneous ads for QR codes. Restored pages are excluded.</string>
+    <string name="ad_clean_all">Clean existing downloads / continue</string>
+    <string name="ad_clean_all_summary">Process completed downloads using local tags; unknown tags wait for metadata sync.</string>
+    <string name="ad_pause">Pause ad cleanup</string>
+    <string name="ad_status">Ad cleanup status</string>
+    <string name="ad_bulk_confirm">Scan the last 7 pages of completed galleries tagged other:extraneous ads. Pages with QR codes will be marked and their images deleted. Page numbers remain intact. A normal page can also contain a QR code; use Refresh from its page menu to restore it.</string>
+    <string name="ad_page_placeholder">This page was marked as an ad; its image was deleted. Long-press → Refresh to restore.</string>
+    <string name="ad_mark_page">Mark this page as an ad and delete image</string>
+    <string name="ad_mark_complete">Mark this gallery as cleaned</string>
+    <string name="ad_scan_gallery">Recheck last 7 pages for QR codes</string>
+    <string name="ad_mark_confirm">Mark this page as an ad and delete its downloaded and cached images? Use Refresh to undo and download it again.</string>
+    <string name="ad_scan_confirm">Scan existing images in the last 7 pages, even without an ad tag. QR pages will be marked and deleted. Previously restored pages will be kept. No images are downloaded for this scan.</string>
+    <string name="ad_complete_confirm">Mark this gallery as manually cleaned and skip future automatic QR scans? Existing ad marks will remain. Recheck last 7 pages resumes scanning.</string>
+    <string name="ad_restore_confirm">Remove the ad mark and download this page again? Automatic cleanup will keep this page until you manually mark it as an ad.</string>
+    <string name="ad_action_done">Ad decisions saved. Missing or unreadable pages remain unchecked.</string>
+    <string name="ad_action_failed">Could not complete cleanup. Saved marks are retained; retry to finish deleting images.</string>
+    <string name="ad_state_paused">Paused; use Continue to resume a bulk job</string>
+    <string name="ad_state_running">Running</string>
+    <string name="ad_state_queued">Queued</string>
+    <string name="ad_state_idle">Idle</string>
+    <string name="ad_progress">Processed %1$d / %2$d galleries · removed images for %3$d pages · failed galleries %4$d · unchecked/deletion failures %5$d · waiting for tags %6$d</string>
+    <string name="ad_storage_title">Download and reading cache storage</string>
+    <string name="ad_storage_calculating">Calculating actual file sizes…</string>
+    <string name="ad_storage_summary">Download directory: %1$s\nReading image cache: %2$s</string>
+    <string name="ad_storage_partial">%1$d files or directories could not be measured; the figure is partial.</string>
+    <string name="ad_storage_failed">Unable to measure storage; check directory access.</string>
+    <string name="ad_gallery_status">Marked ad pages: %1$d · tail pages checked: %2$d / %3$d</string>
+    <string name="ad_manually_complete">Manually marked as cleaned; automatic scans are skipped</string>
 </resources>

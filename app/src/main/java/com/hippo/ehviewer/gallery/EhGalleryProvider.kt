@@ -105,6 +105,17 @@ class EhGalleryProvider(private val mGalleryInfo: GalleryInfo) :
         mSpiderQueen.cancelRequest(index)
     }
 
+    val adRecord get() = mSpiderQueen.adRecord
+    fun isAd(index: Int) = mSpiderQueen.isAd(index)
+    suspend fun markAd(index: Int) = mSpiderQueen.markAd(index)
+    suspend fun markAdComplete() = mSpiderQueen.markAdComplete()
+    suspend fun scanAds(recheck: Boolean) = mSpiderQueen.scanAds(recheck)
+
+    override fun onAdPageChanged(index: Int) {
+        removeCache(index)
+        notifyDataChanged(index)
+    }
+
     override fun onGetPages(pages: Int) {}
 
     override fun onGet509(index: Int) {}

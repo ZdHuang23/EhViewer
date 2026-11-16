@@ -20,6 +20,7 @@ import android.util.SparseLongArray
 import androidx.collection.LongSparseArray
 import androidx.collection.keyIterator
 import androidx.core.util.size
+import com.hippo.ehviewer.EhApplication
 import com.hippo.ehviewer.EhDB
 import com.hippo.ehviewer.client.data.GalleryInfo
 import com.hippo.ehviewer.dao.DownloadInfo
@@ -1113,6 +1114,7 @@ object DownloadManager : OnSpiderListener {
                         }
                         // Update in DB
                         EhDB.putDownloadInfo(info)
+                        if (info.state == DownloadInfo.STATE_FINISH) com.hippo.ehviewer.ads.AdCleanupWorker.afterDownload(EhApplication.application, info.gid)
                         // Notify
                         if (mDownloadListener != null) {
                             mDownloadListener!!.onFinish(info)

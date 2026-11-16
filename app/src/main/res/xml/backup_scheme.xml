@@ -15,6 +15,7 @@
   -->
 
 <full-backup-content>
+    <include domain="file" path="ad-pages/" />
 
     <include
         domain="database"
