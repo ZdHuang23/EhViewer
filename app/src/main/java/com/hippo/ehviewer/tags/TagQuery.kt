@@ -25,6 +25,8 @@ class TagQuery private constructor(private val terms: List<Term>) {
         )
         private val namespaces = aliases.values.toSet()
 
+        fun canonicalNamespace(prefix: String): String = aliases[prefix.lowercase()] ?: prefix.lowercase()
+
         fun parse(query: String): TagQuery {
             require(query.none { it in ";()*%" }) { "不支持分号、括号或通配符；用空格表示与，~ 表示或，- 表示排除。" }
             val tokens = mutableListOf<String>()

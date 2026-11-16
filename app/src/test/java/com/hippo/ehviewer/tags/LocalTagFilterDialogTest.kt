@@ -59,4 +59,14 @@ class LocalTagFilterDialogTest {
         assertTrue(input.error != null)
         dialog.dismiss()
     }
+
+    @Test fun completionReplacesCurrentTokenAndKeepsSurroundingConditions() {
+        val input = TagAutoCompleteTextView(context())
+        input.setText("l:chinese$ -o:extr ~m:muscle$")
+        input.setSelection(input.text.indexOf("extr") + 2)
+        TagAutoCompleteTextView::class.java.getDeclaredMethod("replaceText", CharSequence::class.java).apply {
+            isAccessible = true
+        }.invoke(input, LocalTagFilterDialog.EXAMPLE.let { "-$it" })
+        assertEquals("l:chinese$ -" + LocalTagFilterDialog.EXAMPLE + " ~m:muscle$", input.text.toString())
+    }
 }

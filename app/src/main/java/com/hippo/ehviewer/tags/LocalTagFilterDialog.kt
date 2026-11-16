@@ -13,6 +13,7 @@ class LocalTagFilterDialog(private val context: Context, private val apply: (Str
         val preferences = context.getSharedPreferences("local_tag_filter", Context.MODE_PRIVATE)
         val content = LayoutInflater.from(context).inflate(R.layout.dialog_local_tag_filter, null)
         val input = content.findViewById<EditText>(R.id.tag_filter_input)
+        (input as TagAutoCompleteTextView).setAdapter(TagSuggestionAdapter(context))
         input.setText(preferences.getString("draft", ""))
         input.setSelection(input.length())
         input.doAfterTextChanged { text ->

@@ -46,6 +46,9 @@ abstract class GalleryTagDao {
     @Query("SELECT gid FROM gallery_tags WHERE namespace = :namespace AND name = :name")
     abstract suspend fun matching(namespace: String, name: String): List<Long>
 
+    @Query("SELECT DISTINCT 0 AS gid, namespace, name FROM gallery_tags WHERE (:namespace IS NULL OR namespace = :namespace) AND name LIKE :pattern LIMIT 25")
+    abstract suspend fun suggest(namespace: String?, pattern: String): List<GalleryTag>
+
     @Query("SELECT * FROM gallery_tags")
     abstract suspend fun allTags(): List<GalleryTag>
 

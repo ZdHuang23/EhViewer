@@ -11,7 +11,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/tag_filter_hint" />
-    <EditText
+    <com.hippo.ehviewer.tags.TagAutoCompleteTextView
         android:id="@+id/tag_filter_input"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

@@ -66,4 +66,18 @@ class GalleryTagDatabaseTest {
             db.close()
         }
     }
+
+    @Test fun suggestionsDeduplicateTagsAndRespectNamespace() = runBlocking {
+        val db = Room.inMemoryDatabaseBuilder(RuntimeEnvironment.getApplication(), GalleryTagDatabase::class.java).build()
+        try {
+            val dao = db.tags()
+            for (gid in listOf(1L, 2L)) {
+                dao.seed(gid, "token")
+                dao.save(dao.get(gid)!!, listOf(GalleryTag(gid, "male", "glasses"), GalleryTag(gid, "female", "glasses")))
+            }
+            assertEquals(listOf(GalleryTag(0, "male", "glasses")), dao.suggest(TagQuery.canonicalNamespace("m"), "%glass%"))
+        } finally {
+            db.close()
+        }
+    }
 }

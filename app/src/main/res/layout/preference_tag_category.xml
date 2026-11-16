@@ -10,6 +10,6 @@
     android:paddingBottom="8dp"
     android:gravity="start|center_vertical"
     android:textAlignment="viewStart"
-    android:textAppearance="?attr/textAppearanceBodyMedium"
+    android:textAppearance="?android:attr/textAppearanceListItemSmall"
     android:textColor="?attr/colorPrimary"
     android:textStyle="bold" />
